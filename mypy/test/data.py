@@ -11,6 +11,7 @@ from abc import abstractmethod
 import sys
 
 import pytest  # type: ignore  # no pytest in typeshed
+from _pytest.python import pytest_pycollect_makeitem as default_collect  # type: ignore
 from typing import List, Tuple, Set, Optional, Iterator, Any, Dict, NamedTuple, Union
 
 from mypy.test.config import test_data_prefix, test_temp_dir, PREFIX
@@ -573,7 +574,7 @@ def pytest_pycollect_makeitem(collector: Any, name: str,
             # The collect method of the returned DataSuiteCollector instance will be called later,
             # with self.obj being obj.
             return DataSuiteCollector(name, parent=collector)
-    return None
+    return next(default_collect(collector, name, obj))
 
 
 def split_test_cases(parent: 'DataSuiteCollector', suite: 'DataSuite',

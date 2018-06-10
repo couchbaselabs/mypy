@@ -15,10 +15,10 @@ class ErrorStreamSuite(DataSuite):
     files = ['errorstream.test']
 
     def run_case(self, testcase: DataDrivenTestCase) -> None:
-        test_error_stream(testcase)
+        run_test_error_stream(testcase)
 
 
-def test_error_stream(testcase: DataDrivenTestCase) -> None:
+def run_test_error_stream(testcase: DataDrivenTestCase) -> None:
     """Perform a single error streaming test case.
 
     The argument contains the description of the test case.

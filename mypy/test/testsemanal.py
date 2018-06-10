@@ -8,7 +8,7 @@ from mypy import build
 from mypy.modulefinder import BuildSource
 from mypy.defaults import PYTHON3_VERSION
 from mypy.test.helpers import (
-    assert_string_arrays_equal, normalize_error_messages, testfile_pyversion,
+    assert_string_arrays_equal, normalize_error_messages, get_testfile_pyversion,
 )
 from mypy.test.data import DataDrivenTestCase, DataSuite
 from mypy.test.config import test_temp_dir
@@ -49,10 +49,10 @@ class SemAnalSuite(DataSuite):
     native_sep = True
 
     def run_case(self, testcase: DataDrivenTestCase) -> None:
-        test_semanal(testcase)
+        run_test_semanal(testcase)
 
 
-def test_semanal(testcase: DataDrivenTestCase) -> None:
+def run_test_semanal(testcase: DataDrivenTestCase) -> None:
     """Perform a semantic analysis test case.
 
     The testcase argument contains a description of the test case
@@ -62,7 +62,7 @@ def test_semanal(testcase: DataDrivenTestCase) -> None:
     try:
         src = '\n'.join(testcase.input)
         options = get_semanal_options()
-        options.python_version = testfile_pyversion(testcase.file)
+        options.python_version = get_testfile_pyversion(testcase.file)
         result = build.build(sources=[BuildSource('main', None, src)],
                              options=options,
                              alt_lib_path=test_temp_dir)
@@ -103,10 +103,10 @@ class SemAnalErrorSuite(DataSuite):
     files = ['semanal-errors.test']
 
     def run_case(self, testcase: DataDrivenTestCase) -> None:
-        test_semanal_error(testcase)
+        run_test_semanal_error(testcase)
 
 
-def test_semanal_error(testcase: DataDrivenTestCase) -> None:
+def run_test_semanal_error(testcase: DataDrivenTestCase) -> None:
     """Perform a test case."""
 
     try:

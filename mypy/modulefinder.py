@@ -10,7 +10,7 @@ import os
 import subprocess
 import sys
 
-from typing import Dict, List, NamedTuple, Optional, Set, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple, Union
 
 MYPY = False
 if MYPY:
@@ -41,17 +41,32 @@ class BuildSource:
     """A single source file."""
 
     def __init__(self, path: Optional[str], module: Optional[str],
-                 text: Optional[str], base_dir: Optional[str] = None) -> None:
+                 text: Optional[str], base_dir: Optional[str] = None,
+                 merge_with: Optional['BuildSource'] = None) -> None:
         self.path = path  # File where it's found (e.g. 'xxx/yyy/foo/bar.py')
         self.module = module or '__main__'  # Module name (e.g. 'foo.bar')
         self.text = text  # Source code, if initially supplied, else None
         self.base_dir = base_dir  # Directory where the package is rooted (e.g. 'xxx/yyy')
+        self.merge_with = merge_with
 
     def __repr__(self) -> str:
         return '<BuildSource path=%r module=%r has_text=%s>' % (self.path,
                                                                 self.module,
                                                                 self.text is not None)
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, BuildSource):
+            return False
+        return (self.path, self.module, self.text, self.base_dir, self.merge_with) == (
+            other.path,
+            other.module,
+            other.text,
+            other.base_dir,
+            other.merge_with,
+        )
+
+    def __ne__(self, other: Any) -> bool:
+        return not self.__eq__(other)
 
 class FindModuleCache:
     """Module finder with integrated cache.
@@ -102,7 +117,7 @@ class FindModuleCache:
                 dirs.append((dir, True))
         return dirs
 
-    def find_module(self, id: str) -> Optional[str]:
+    def find_module(self, id: str) -> Union[Optional[str], Tuple[str, ...]]:
         """Return the path of the module source file, or None if not found."""
         if id not in self.results:
             self.results[id] = self._find_module(id)
@@ -125,7 +140,7 @@ class FindModuleCache:
                 self.ns_ancestors[pkg_id] = path
             path = os.path.dirname(path)
 
-    def _find_module(self, id: str) -> Optional[str]:
+    def _find_module(self, id: str) -> Union[Optional[str], Tuple[str, ...]]:
         fscache = self.fscache
 
         # If we're looking for a module like 'foo.bar.baz', it's likely that most of the
@@ -205,13 +220,18 @@ class FindModuleCache:
                 elif self.options and self.options.namespace_packages and fscache.isdir(base_path):
                     near_misses.append(base_path)
             # No package, look for module.
+            paths = []
             for extension in PYTHON_EXTENSIONS:
                 path = base_path + extension
                 if fscache.isfile_case(path):
                     if verify and not verify_module(fscache, id, path):
                         near_misses.append(path)
                         continue
-                    return path
+                    paths.append(path)
+            if len(paths) == 1:
+                return paths[0]
+            elif len(paths) > 1:
+                return tuple(paths)
 
         # In namespace mode, re-check those entries that had 'verify'.
         # Assume search path entries xxx, yyy and zzz, and we're
@@ -249,7 +269,10 @@ class FindModuleCache:
         module_path = self.find_module(module)
         if not module_path:
             return []
-        result = [BuildSource(module_path, module, None)]
+        merge_with = None
+        if isinstance(module_path, tuple):
+            module_path = module_path
+        result = [BuildSource(module_path, module, None, merge_with=merge_with)]
         if module_path.endswith(('__init__.py', '__init__.pyi')):
             # Subtle: this code prefers the .pyi over the .py if both
             # exists, and also prefers packages over modules if both x/

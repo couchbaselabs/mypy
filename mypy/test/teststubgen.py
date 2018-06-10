@@ -136,7 +136,7 @@ class StubgenPythonSuite(DataSuite):
     files = ['stubgen.test']
 
     def run_case(self, testcase: DataDrivenTestCase) -> None:
-        test_stubgen(testcase)
+        run_test_stubgen(testcase)
 
 
 def parse_flags(program_text: str) -> Options:
@@ -148,7 +148,7 @@ def parse_flags(program_text: str) -> Options:
     return parse_options(flag_list + ['dummy.py'])
 
 
-def test_stubgen(testcase: DataDrivenTestCase) -> None:
+def run_test_stubgen(testcase: DataDrivenTestCase) -> None:
     if 'stubgen-test-path' not in sys.path:
         sys.path.insert(0, 'stubgen-test-path')
     os.mkdir('stubgen-test-path')

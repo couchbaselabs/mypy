@@ -222,6 +222,8 @@ class Options:
         # Don't properly free objects on exit, just kill the current process.
         self.fast_exit = False
 
+        self.merge_stub_into_src = False
+
     def snapshot(self) -> object:
         """Produce a comparable snapshot of this Option"""
         # Under mypyc, we don't have a __dict__, so we need to do worse things.

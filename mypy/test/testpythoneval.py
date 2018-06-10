@@ -39,10 +39,10 @@ class PythonEvaluationSuite(DataSuite):
     cache_dir = TemporaryDirectory()
 
     def run_case(self, testcase: DataDrivenTestCase) -> None:
-        test_python_evaluation(testcase, os.path.join(self.cache_dir.name, '.mypy_cache'))
+        run_test_python_evaluation(testcase, os.path.join(self.cache_dir.name, '.mypy_cache'))
 
 
-def test_python_evaluation(testcase: DataDrivenTestCase, cache_dir: str) -> None:
+def run_test_python_evaluation(testcase: DataDrivenTestCase, cache_dir: str) -> None:
     """Runs Mypy in a subprocess.
 
     If this passes without errors, executes the script again with a given Python

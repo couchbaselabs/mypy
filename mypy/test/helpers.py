@@ -242,18 +242,18 @@ def num_skipped_suffix_lines(a1: List[str], a2: List[str]) -> int:
     return max(0, num_eq - 4)
 
 
-def testfile_pyversion(path: str) -> Tuple[int, int]:
+def get_testfile_pyversion(path: str) -> Tuple[int, int]:
     if path.endswith('python2.test'):
         return defaults.PYTHON2_VERSION
     else:
         return defaults.PYTHON3_VERSION
 
 
-def testcase_pyversion(path: str, testcase_name: str) -> Tuple[int, int]:
+def get_testcase_pyversion(path: str, testcase_name: str) -> Tuple[int, int]:
     if testcase_name.endswith('python2'):
         return defaults.PYTHON2_VERSION
     else:
-        return testfile_pyversion(path)
+        return get_testfile_pyversion(path)
 
 
 def normalize_error_messages(messages: List[str]) -> List[str]:
@@ -357,7 +357,7 @@ def parse_options(program_text: str, testcase: DataDrivenTestCase,
     # Allow custom python version to override testcase_pyversion
     if (not flag_list or
             all(flag not in flag_list for flag in ['--python-version', '-2', '--py2'])):
-        options.python_version = testcase_pyversion(testcase.file, testcase.name)
+        options.python_version = get_testcase_pyversion(testcase.file, testcase.name)
 
     if testcase.config.getoption('--mypy-verbose'):
         options.verbosity = testcase.config.getoption('--mypy-verbose')

@@ -47,6 +47,7 @@ from mypy.nodes import Expression
 from mypy.options import Options
 from mypy.parse import parse
 from mypy.stats import dump_type_stats
+from mypy.stub_src_merge import MergeFiles
 from mypy.types import Type
 from mypy.version import __version__
 from mypy.plugin import Plugin, ChainedPlugin, plugin_types
@@ -102,6 +103,8 @@ class BuildSourceSet:
                 self.source_text_present = True
             elif source.path:
                 self.source_paths.add(source.path)
+                if source.merge_with and source.merge_with.path:
+                    self.source_paths.add(source.merge_with.path)
             else:
                 self.source_modules.add(source.module)
 
@@ -1962,6 +1965,23 @@ class State:
                 self.verify_dependencies(suppressed_only=True)
             self.manager.errors.generate_unused_ignore_notes(self.xpath)
 
+    def merge_with(self, state: 'State', errors: Errors) -> None:
+        self.ancestors = list(set(self.ancestors or []) | set(state.ancestors or []))
+        self.child_modules = set(self.child_modules) | set(state.child_modules)
+        self.dependencies = list(set(self.dependencies) | set(state.dependencies))
+
+        dep_line_map = {k: -v for k, v in state.dep_line_map.items()}
+        dep_line_map.update(self.dep_line_map)
+        self.dep_line_map = dep_line_map
+
+        priorities = {k: -v for k, v in state.priorities.items()}
+        priorities.update(self.priorities)
+        self.priorities = priorities
+
+        self.dep_line_map.update({k: -v for k, v in state.dep_line_map.items()})
+        if self.tree is not None and state.tree is not None:
+            MergeFiles(self.tree, state.tree, errors, self.xpath, self.id).run()
+
 
 # Module import and diagnostic glue
 
@@ -2007,6 +2027,8 @@ def find_module_and_diagnose(manager: BuildManager,
         file_id = '__builtin__'
     path = find_module_simple(file_id, manager)
     if path:
+        if isinstance(path, tuple):
+            path = path[-1]
         # For non-stubs, look at options.follow_imports:
         # - normal (default) -> fully analyze
         # - silent -> analyze but silence errors
@@ -2082,7 +2104,7 @@ def exist_added_packages(suppressed: List[str],
     return False
 
 
-def find_module_simple(id: str, manager: BuildManager) -> Optional[str]:
+def find_module_simple(id: str, manager: BuildManager) -> Union[Optional[str], Tuple[str, ...]]:
     """Find a filesystem path for module `id` or `None` if not found."""
     t0 = time.time()
     x = manager.find_module_cache.find_module(id)
@@ -2342,8 +2364,16 @@ def load_graph(sources: List[BuildSource], manager: BuildManager,
     # Seed the graph with the initial root sources.
     for bs in sources:
         try:
+            stub_state = None
+            if bs.merge_with:
+                mw = bs.merge_with
+                stub_state = State(id=mw.module, path=mw.path, source=mw.text,
+                                   manager=manager, root_source=True)
+                stub_state.parse_file()
             st = State(id=bs.module, path=bs.path, source=bs.text, manager=manager,
                        root_source=True)
+            if stub_state is not None:
+                st.merge_with(stub_state, manager.errors)
         except ModuleNotFound:
             continue
         if st.id in graph:

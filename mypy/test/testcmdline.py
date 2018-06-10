@@ -32,6 +32,7 @@ class PythonCmdlineSuite(DataSuite):
     native_sep = True
 
     def run_case(self, testcase: DataDrivenTestCase) -> None:
+
         for step in [1] + sorted(testcase.output2):
             test_python_cmdline(testcase, step)
 

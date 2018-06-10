@@ -5,7 +5,7 @@ import os.path
 from mypy import build
 from mypy.modulefinder import BuildSource
 from mypy.test.helpers import (
-    assert_string_arrays_equal, testfile_pyversion, normalize_error_messages
+    assert_string_arrays_equal, get_testfile_pyversion, normalize_error_messages
 )
 from mypy.test.data import DataDrivenTestCase, DataSuite
 from mypy.test.config import test_temp_dir
@@ -28,10 +28,10 @@ class TransformSuite(DataSuite):
     native_sep = True
 
     def run_case(self, testcase: DataDrivenTestCase) -> None:
-        test_transform(testcase)
+        run_test_transform(testcase)
 
 
-def test_transform(testcase: DataDrivenTestCase) -> None:
+def run_test_transform(testcase: DataDrivenTestCase) -> None:
     """Perform an identity transform test case."""
 
     try:
@@ -40,7 +40,7 @@ def test_transform(testcase: DataDrivenTestCase) -> None:
         options.use_builtins_fixtures = True
         options.semantic_analysis_only = True
         options.show_traceback = True
-        options.python_version = testfile_pyversion(testcase.file)
+        options.python_version = get_testfile_pyversion(testcase.file)
         result = build.build(sources=[BuildSource('main', None, src)],
                              options=options,
                              alt_lib_path=test_temp_dir)

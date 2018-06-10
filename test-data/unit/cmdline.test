@@ -1223,8 +1223,8 @@ fail
 fail
 [out]
 foo/lol.py:1: error: Name 'fail' is not defined
-emarg/foo.py:1: error: Name 'fail' is not defined
 emarg/hatch/villip/mankangulisk.py:1: error: Name 'fail' is not defined
+emarg/foo.py:1: error: Name 'fail' is not defined
 
 [case testPackageRootEmpty]
 # cmd: mypy --package-root= a/b/c.py main.py

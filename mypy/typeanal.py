@@ -1260,8 +1260,16 @@ def make_optional_type(t: Type) -> Type:
     if isinstance(t, NoneTyp):
         return t
     elif isinstance(t, UnionType):
-        items = [item for item in union_items(t)
-                 if not isinstance(item, NoneTyp)]
-        return UnionType(items + [NoneTyp()], t.line, t.column)
+        # keep only the first None
+        items = []
+        found = False
+        for item in union_items(t):
+            if isinstance(item, NoneTyp):
+                if not found:
+                    items.append(NoneTyp())
+                found = True
+            else:
+                items.append(item)
+        return UnionType(items, t.line, t.column)
     else:
         return UnionType([t, NoneTyp()], t.line, t.column)

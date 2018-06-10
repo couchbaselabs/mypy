@@ -15,10 +15,10 @@ class ParserSuite(DataSuite):
              'parse-python2.test']
 
     def run_case(self, testcase: DataDrivenTestCase) -> None:
-        test_parser(testcase)
+        run_test_parser(testcase)
 
 
-def test_parser(testcase: DataDrivenTestCase) -> None:
+def run_test_parser(testcase: DataDrivenTestCase) -> None:
     """Perform a single parser test case.
 
     The argument contains the description of the test case.
@@ -55,10 +55,10 @@ class ParseErrorSuite(DataSuite):
     files = ['parse-errors.test']
 
     def run_case(self, testcase: DataDrivenTestCase) -> None:
-        test_parse_error(testcase)
+        run_test_parse_error(testcase)
 
 
-def test_parse_error(testcase: DataDrivenTestCase) -> None:
+def run_test_parse_error(testcase: DataDrivenTestCase) -> None:
     try:
         # Compile temporary file. The test file contains non-ASCII characters.
         parse(bytes('\n'.join(testcase.input), 'utf-8'), INPUT_FILE_NAME, '__main__', None,
