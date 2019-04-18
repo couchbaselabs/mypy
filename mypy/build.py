@@ -52,6 +52,7 @@ from mypy.nodes import Expression
 from mypy.options import Options
 from mypy.parse import parse
 from mypy.stats import dump_type_stats
+from mypy.stub_src_merge import MergeFiles
 from mypy.types import Type
 from mypy.version import __version__
 from mypy.plugin import Plugin, ChainedPlugin, plugin_types
@@ -108,6 +109,8 @@ class BuildSourceSet:
                 self.source_text_present = True
             elif source.path:
                 self.source_paths.add(source.path)
+                if source.merge_with and source.merge_with.path:
+                    self.source_paths.add(source.merge_with.path)
             else:
                 self.source_modules.add(source.module)
 
@@ -2181,6 +2184,23 @@ class State:
             if self.meta:
                 self.verify_dependencies(suppressed_only=True)
             self.manager.errors.generate_unused_ignore_errors(self.xpath)
+
+    def merge_with(self, state: 'State', errors: Errors) -> None:
+        self.ancestors = list(set(self.ancestors or []) | set(state.ancestors or []))
+        self.child_modules = set(self.child_modules) | set(state.child_modules)
+        self.dependencies = list(set(self.dependencies) | set(state.dependencies))
+
+        dep_line_map = {k: -v for k, v in state.dep_line_map.items()}
+        dep_line_map.update(self.dep_line_map)
+        self.dep_line_map = dep_line_map
+
+        priorities = {k: -v for k, v in state.priorities.items()}
+        priorities.update(self.priorities)
+        self.priorities = priorities
+
+        self.dep_line_map.update({k: -v for k, v in state.dep_line_map.items()})
+        if self.tree is not None and state.tree is not None:
+            MergeFiles(self.tree, state.tree, errors, self.xpath, self.id).run()
 
 
 # Module import and diagnostic glue

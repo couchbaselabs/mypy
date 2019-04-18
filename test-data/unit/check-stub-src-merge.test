@@ -1,0 +1,333 @@
+[case stub_src_type_does_not_match]
+# modules: a
+[file in/a.py]
+a = 1  # E: conflict of src Var and stub:1 FuncDef definition
+[file in/a.pyi]
+def a() -> None: ...
+
+[case module_func_arg_conflict]
+# modules: a
+[file in/a.py]
+def a(arg): ... # E: arg conflict of src ['arg'] and stub (line 1) ['arg1']
+[file in/a.pyi]
+def a(arg1) -> None: ...
+
+[case module_func]
+# modules: a
+[file in/a.py]
+def fancy_add(a, b = None):
+    pass
+[file in/a.pyi]
+from typing import Union
+def fancy_add(a : int, b : Union[None, int] = ...) -> int: ...
+[file out/a.py]
+from typing import Union
+def fancy_add(a : int, b : Union[None, int] = None) -> int:
+    pass
+
+[case module_func_reverse_union]
+# modules: a
+[file in/a.py]
+def fancy_add(a, b = None):
+    pass
+[file in/a.pyi]
+from typing import Union
+def fancy_add(a : int, b : Union[int, None] = ...) -> int: ...
+[file out/a.py]
+from typing import Union
+def fancy_add(a : int, b : Union[int, None] = None) -> int:
+    pass
+
+[case module_variable]
+# modules: a
+[file in/a.py]
+VERSION = ('1', '2', 3)
+[file in/a.pyi]
+from typing import Tuple
+VERSION : Tuple[str, str, int] = ...
+[file out/a.py]
+from typing import Tuple
+VERSION : Tuple[str, str, int] = ('1', '2', 3)
+
+
+[case class_variable_default]
+# modules: a
+[file in/a.py]
+class A:
+    b = 1
+[file in/a.pyi]
+class A:
+    b : int = ...
+[file out/a.py]
+class A:
+    b : int = 1
+
+
+[case class_init_self_can_be_defined_at_lass_level]
+# modules: a
+[file in/a.py]
+class A:
+    def __init__(self):
+        self.a = 's'
+[file in/a.pyi]
+class A:
+    a : str = ...
+    def __init__(self) -> None: ...
+[file out/a.py]
+class A:
+    def __init__(self) -> None:
+        self.a : str = 's'
+
+
+[case class_init_not_defined]
+# modules: a
+[file in/a.py]
+class A:  # E: no stub definition for class member a
+    def __init__(self):
+        a = 1
+        self.a = a
+[file in/a.pyi]
+class A:
+    def __init__(self) -> None: ...
+
+[case class_init_self_can_be_defined_at_class_level_inside_if]
+# modules: a
+[file in/a.py]
+class A:
+    def __init__(self):
+        if True:
+            self.a = 0
+        else:
+            self.a = 1
+[file in/a.pyi]
+class A:
+    a : int = ...
+    def __init__(self) -> None: ...
+[file out/a.py]
+class A:
+    def __init__(self) -> None:
+        if True:
+            self.a : int = 0
+        else:
+            self.a = 1
+
+[case class_decorator]
+# modules: a
+[builtins fixtures/classmethod.pyi]
+[file in/a.py]
+class A:
+    @classmethod
+    def a(cls):
+        pass
+[file in/a.pyi]
+class A:
+    @classmethod
+    def a(cls) -> None: ...
+[file out/a.py]
+class A:
+    @classmethod
+    def a(cls) -> None:
+        pass
+
+[case class_decorator_no_source_decorator]
+# modules: a
+[builtins fixtures/classmethod.pyi]
+[file in/a.py]
+class A: # E: no source for func a @stub:2
+    pass
+[file in/a.pyi]
+class A:
+    @classmethod
+    def a(cls) -> None: ...
+
+[case class_decorator_no_source_assignment]
+# modules: a
+[file in/a.py]
+class A: # E: no source for assign a @stub:2
+    pass
+[file in/a.pyi]
+class A:
+    a : int = ...
+
+[case module_variable_complex_not_supported]
+# modules: a
+[file in/a.py]
+class A:  # E: l-values must be simple name expressions, is TupleExpr
+    a, b = 1, 2
+[file in/a.pyi]
+class A:
+    a, b = ..., ...
+
+[case class_decorator_no_source_func]
+# modules: a
+[file in/a.py]
+class A: # E: no source for func a @stub:2
+    pass
+[file in/a.pyi]
+class A:
+    def a(cls) -> None: ...
+
+[case variable_module_level]
+# modules: a
+[file in/a.py]
+a = 1
+[file in/a.pyi]
+a : int = ...
+[file out/a.py]
+a : int = 1
+
+[case decorator_func]
+# modules: a
+[file in/a.py]
+def d(p, r):
+    def t(func):
+        def w(b):
+            return str(func(int(b) + p + r))
+        return w
+    return t
+@d(p=1, r=2)
+def a(b):
+    return b + 1
+a("1")
+[file in/a.pyi]
+from typing import Callable
+def d(p: int, r: int) -> Callable[[Callable[[int], int]], Callable[[str], str]]: ...
+@d(p= ..., r= ...)
+def a(b: int) -> int: ...
+[file out/a.py]
+from typing import Callable
+def d(p: int, r: int) -> Callable[[Callable[[int], int]], Callable[[str], str]]:
+    def t(func):
+        def w(b):
+            return str(func(int(b) + p + r))
+        return w
+    return t
+@d(p=1, r=2)
+def a(b: int) -> int:
+    return b + 1
+a("1")
+
+[case decorator_func_arg_not_ellipse]
+# modules: a
+[file in/a.py]
+def d(p, r):
+    def t(func):
+        def w(b):
+            return str(func(int(b) + p + r))
+        return w
+    return t
+@d(p=1, r=2) # E: stub should not contain default value, p has IntExpr # E: stub should not contain default value, r has NameExpr
+def a(b):
+    return b + 1
+[file in/a.pyi]
+from typing import Callable
+def d(p: int, r: int) -> Callable[[Callable[[int], int]], Callable[[str], str]]: ...
+@d(p= 1, r= None)
+def a(b: int) -> int: ...
+
+[case decorator_func_args_keys_differ]
+# modules: a
+[file in/a.py]
+def d(p, r):
+    def t(func):
+        def w(b):
+            return str(func(int(b) + p + r))
+        return w
+    return t
+@d(p=1, v=None) # E: Unexpected keyword argument "v" for "d" # E: conflict of src v and stub r decorator argument name
+def a():
+    pass
+[file in/a.pyi]
+@d(p=..., r=...)
+def a() -> None: ...
+
+[case decorator_name_does_not_match]
+# modules: a
+[file in/a.py]
+def d(p, r):
+    def t(func):
+        def w(b):
+            return str(func(int(b) + p + r))
+        return w
+    return t
+def de(p, r):
+    return d(p, r)
+@de(p=1, r=1) # E: conflict of src de and stub d decorator name
+def a(b: int) -> int: ...
+[file in/a.pyi]
+from typing import Callable
+def d(p: int, r: int) -> Callable[[Callable[[int], int]], Callable[[str], str]]: ...
+def de(p: int, r: int) -> Callable[[Callable[[int], int]], Callable[[str], str]]: ...
+@d(p=..., r=...)
+def a(b: int) -> int: ...
+
+[case decorator_source_less]
+# modules: a
+[file in/a.py]
+def d(func):
+    def w():
+        return func()
+    return w
+def de(func):
+    return d(func)
+@d  # E: conflict of src NoneType and stub NameExpr decorator
+def a() -> None:
+    return None
+[file in/a.pyi]
+from typing import Callable
+def d(func: Callable[[], None]) -> Callable[[], None]: ...
+def de(func: Callable[[], None]) -> Callable[[], None]: ...
+@d
+@de
+def a() -> None: ...
+
+[case decorator_stub_less]
+# modules: a
+[file in/a.py]
+def d(func):
+    def w():
+        return func()
+    return w
+def de(func):
+    return d(func)
+@d  # E: conflict of src NameExpr and stub NoneType decorator
+@de
+def a() -> None:
+    return None
+[file in/a.pyi]
+from typing import Callable
+def d(func: Callable[[], None]) -> Callable[[], None]: ...
+def de(func: Callable[[], None]) -> Callable[[], None]: ...
+@d
+def a() -> None: ...
+
+[case decorator_expr_stub_not_ellipsis]
+# modules: a
+[file in/a.py]
+def d(p, r):
+    def t(func):
+        def w(b):
+            return str(func(int(b) + p + r))
+        return w
+    return t
+@d(p=1, r=2) # E: stub should not contain default value, p has IntExpr
+def a(b):
+    return b + 1
+[file in/a.pyi]
+from typing import Callable
+def d(p: int, r: int) -> Callable[[Callable[[int], int]], Callable[[str], str]]: ...
+@d(p= 1, r= ...)
+def a(b: int) -> int: ...
+
+
+[case relative_import]
+# modules: t2 p p.t
+[file in/p/__init__.pyi]
+[file in/p/t.py]
+def f(x): pass
+[file in/p/t.pyi]
+def f(x: int) -> None: ...
+[file in/t2.py]
+from p.t import f
+
+

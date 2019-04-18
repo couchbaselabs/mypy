@@ -10,7 +10,7 @@ import os
 import subprocess
 import sys
 
-from typing import Dict, List, NamedTuple, Optional, Set, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple, Union
 
 MYPY = False
 if MYPY:
@@ -41,16 +41,29 @@ class BuildSource:
     """A single source file."""
 
     def __init__(self, path: Optional[str], module: Optional[str],
-                 text: Optional[str], base_dir: Optional[str] = None) -> None:
+                 text: Optional[str], base_dir: Optional[str] = None,
+                 merge_with: Optional['BuildSource'] = None) -> None:
         self.path = path  # File where it's found (e.g. 'xxx/yyy/foo/bar.py')
         self.module = module or '__main__'  # Module name (e.g. 'foo.bar')
         self.text = text  # Source code, if initially supplied, else None
         self.base_dir = base_dir  # Directory where the package is rooted (e.g. 'xxx/yyy')
+        self.merge_with = merge_with
 
     def __repr__(self) -> str:
         return '<BuildSource path=%r module=%r has_text=%s>' % (self.path,
                                                                 self.module,
                                                                 self.text is not None)
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, BuildSource):
+            return all(
+                getattr(self, key) == getattr(other, key)
+                for key in ("path", "module", "text", "base_dir", "merge_with")
+            )
+        return False
+
+    def __ne__(self, other: Any) -> bool:
+        return not self.__eq__(other)
 
 
 class FindModuleCache:
@@ -243,6 +256,7 @@ class FindModuleCache:
                         continue
                     return path
 
+
         # In namespace mode, re-check those entries that had 'verify'.
         # Assume search path entries xxx, yyy and zzz, and we're
         # looking for foo.bar.baz.  Suppose near_misses has:
@@ -280,7 +294,8 @@ class FindModuleCache:
         module_path = self.find_module(module)
         if not module_path:
             return []
-        result = [BuildSource(module_path, module, None)]
+        merge_with = None
+        result = [BuildSource(module_path, module, None, merge_with=merge_with)]
         if module_path.endswith(('__init__.py', '__init__.pyi')):
             # Subtle: this code prefers the .pyi over the .py if both
             # exists, and also prefers packages over modules if both x/

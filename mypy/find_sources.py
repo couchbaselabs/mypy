@@ -1,8 +1,9 @@
 """Routines for finding the sources that mypy will check"""
+from itertools import tee, filterfalse
 
 import os.path
 
-from typing import List, Sequence, Set, Tuple, Optional, Dict
+from typing import List, Sequence, Set, Tuple, Optional, Dict, Callable, Iterable
 
 from mypy.modulefinder import BuildSource, PYTHON_EXTENSIONS
 from mypy.fscache import FileSystemCache

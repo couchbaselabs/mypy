@@ -625,6 +625,10 @@ def process_options(args: List[str],
         '--find-occurrences', metavar='CLASS.MEMBER',
         dest='special-opts:find_occurrences',
         help="Print out all usages of a class member (experimental)")
+    add_invertible_flag('--merge-stub-into-src', default=False, strict_flag=False,
+                        help="when a stub and source file is in the same folder with same name "
+                             "merge the stub file into the source file, and lint the source file",
+                        group=other_group)
 
     if server_options:
         # TODO: This flag is superfluous; remove after a short transition (2018-03-16)
