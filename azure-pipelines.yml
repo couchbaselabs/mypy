@@ -1,0 +1,58 @@
+name: $(BuildDefinitionName)_$(Date:yyyyMMdd)$(Rev:.rr)
+
+resources:
+  repositories:
+  - repository: tox
+    type: github
+    endpoint: github
+    name: tox-dev/azure-pipelines-template
+    ref: master
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+    - refs/tags/*
+pr:
+  branches:
+    include:
+    - master
+
+variables:
+  PYTEST_ADDOPTS: "-v -v -ra --showlocals"
+
+jobs:
+- template: run-tox-env.yml@tox
+  parameters:
+    jobs:
+      check:
+        py: '3.7'
+        toxenvs:
+        - type
+        - lint
+        - docs
+        - dev
+      windows:
+        toxenvs:
+        - py37
+      new_sem_anal:
+        env:
+          NEWSEMANAL: '1'
+        toxenvs:
+        - py37
+        - py35
+      linux:
+        toxenvs:
+        - py37
+        - py36
+        - py35      
+      macOs:
+        toxenvs:
+        - py37
+      py38:
+        before:
+        - script: 'sudo apt-get install -y --no-install-recommends libxml2-dev libxslt1-dev'
+          displayName: 'install build dependencies for lxml (no dependencies)'
+        toxenvs:
+        - py38
