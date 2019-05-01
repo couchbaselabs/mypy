@@ -1,0 +1,47 @@
+name: $(BuildDefinitionName)_$(Date:yyyyMMdd)$(Rev:.rr)
+
+resources:
+  repositories:
+  - repository: tox
+    type: github
+    endpoint: github
+    name: tox-dev/azure-pipelines-template
+    ref: master
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+    - refs/tags/*
+pr:
+  branches:
+    include:
+    - master
+
+variables:
+  PYTEST_ADDOPTS: "-v -v -ra --showlocals"
+
+jobs:
+- template: run-tox-env.yml@tox
+  parameters:
+    jobs:
+      type: null
+      py351:
+        image: [linux]
+        before:
+        - script: |
+            sudo apt-get update
+            sudo apt-get install -f -y --reinstall --no-install-recommends python3.5=3.5.1-10
+          displayName: 'provision python 3.5.1'
+      py37:
+        image: [linux, windows, macOs]
+      py38:
+        image: [linux]
+      py36:
+        image: [linux, windows, macOs]
+      py35:
+        image: [linux, windows, macOs]
+      docs: null
+      dev: null
+      lint: null
